@@ -107,20 +107,20 @@ module.exports = (app) => {
 
             // Si el nro de tel trae NULL cambiar por 595000 y cambiar el estado a 2
             // Si no reemplazar el 0 por el 595
-            // if (!e.TELEFONO_MOVIL) {
-            //   e.TELEFONO_MOVIL = "595000";
-            //   e.estado_envio = 2;
-            // } else {
-            //   e.TELEFONO_MOVIL = e.TELEFONO_MOVIL.replace(0, "595");
-            // }
-
-            // Reemplazar por mi nro para probar el envio
             if (!e.TELEFONO_MOVIL) {
               e.TELEFONO_MOVIL = "595000";
               e.estado_envio = 2;
             } else {
-              e.TELEFONO_MOVIL = "595986153301";
+              e.TELEFONO_MOVIL = e.TELEFONO_MOVIL.replace(0, "595");
             }
+
+            // Reemplazar por mi nro para probar el envio
+            // if (!e.TELEFONO_MOVIL) {
+            //   e.TELEFONO_MOVIL = "595000";
+            //   e.estado_envio = 2;
+            // } else {
+            //   e.TELEFONO_MOVIL = "595986153301";
+            // }
 
             // Poblar PGSQL
             Turnos_satisfaccion.create(e)
@@ -133,7 +133,7 @@ module.exports = (app) => {
           console.log(
             "Llama a la funcion iniciar envio que se retrasa 1 min en ejecutarse Satisfaccion"
           );
-          //iniciarEnvio();
+          iniciarEnvio();
         }
       );
     });
