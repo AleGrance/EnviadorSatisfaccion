@@ -9,7 +9,7 @@ var Firebird = require("node-firebird");
 import { firebird } from "../libs/config";
 
 // Var para la conexion a WWA Free
-const wwaUrl = "http://localhost:3001/lead";
+const wwaUrl = "http://localhost:3009/lead";
 
 // URL del notificador
 const wwaUrl_Notificacion = "http://192.168.10.245:3088/lead";
