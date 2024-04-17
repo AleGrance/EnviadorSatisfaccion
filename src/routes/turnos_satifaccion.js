@@ -200,8 +200,8 @@ Gracias🦷😁
           const dataBody = {
             message: mensajeCompleto,
             phone: losTurnos[i].TELEFONO_MOVIL,
-            mimeType: fileMimeTypeMedia,
-            data: fileBase64Media,
+            mimeType: "",
+            data: "",
             fileName: "",
             fileSize: "",
           };
