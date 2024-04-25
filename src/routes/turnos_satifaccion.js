@@ -46,6 +46,8 @@ var tiempoRetrasoEnvios = 15000;
 // Blacklist fechas
 const blacklist = ["2023-05-02", "2023-05-16", "2023-08-15"];
 
+const apiKey = "j8jDDK5I8IvxE4pRheZz0HMDSXW9hkAG";
+
 module.exports = (app) => {
   const Turnos_satisfaccion = app.db.models.Turnos_satisfaccion;
   const Users = app.db.models.Users;
@@ -486,28 +488,42 @@ ${error}`,
 
   // Trae los que ya fueron notificados hoy
   app.route("/api/turnosSatisfaccionNotificados").get((req, res) => {
-    // Fecha de hoy 2022-02-30
-    let fechaHoy = new Date().toISOString().slice(0, 10);
-
-    Turnos_satisfaccion.count({
-      where: {
-        [Op.and]: [
-          { estado_envio: 1 },
-          {
-            updatedAt: {
-              [Op.between]: [fechaHoy + " 00:00:00", fechaHoy + " 23:59:59"],
-            },
-          },
-        ],
-      },
-      //order: [["FECHA_CREACION", "DESC"]],
-    })
-      .then((result) => res.json(result))
-      .catch((error) => {
-        res.status(402).json({
-          msg: error.menssage,
-        });
+    if (!req.headers.apikey) {
+      return res.status(403).send({
+        error: "Forbidden",
+        message: "Tu petición no tiene cabecera de autorización",
       });
+    }
+
+    if (req.headers.apikey === apiKey) {
+      // Fecha de hoy 2022-02-30
+      let fechaHoy = new Date().toISOString().slice(0, 10);
+
+      Turnos_satisfaccion.count({
+        where: {
+          [Op.and]: [
+            { estado_envio: 1 },
+            {
+              updatedAt: {
+                [Op.between]: [fechaHoy + " 00:00:00", fechaHoy + " 23:59:59"],
+              },
+            },
+          ],
+        },
+        //order: [["FECHA_CREACION", "DESC"]],
+      })
+        .then((result) => res.json(result))
+        .catch((error) => {
+          res.status(402).json({
+            msg: error.menssage,
+          });
+        });
+    } else {
+      return res.status(403).send({
+        error: "Forbidden",
+        message: "Cabecera de autorización inválida",
+      });
+    }
   });
 
   // // Trae la cantidad de turnos enviados por rango de fecha desde hasta

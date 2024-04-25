@@ -1,5 +1,6 @@
 const cron = require("node-cron");
 const { Op } = require("sequelize");
+const apiKey = "j8jDDK5I8IvxE4pRheZz0HMDSXW9hkAG";
 
 module.exports = (app) => {
   const Historicos_satisfaccion = app.db.models.Historicos_satisfaccion;
@@ -13,7 +14,7 @@ module.exports = (app) => {
   };
 
   // Ejecutar la funcion a las 08:30 de Martes(2) a Sabados (6)
-  cron.schedule("00 13 * * 2-6", () => {
+  cron.schedule("00 13 * * 1-6", () => {
     let hoyAhora = new Date();
     let diaHoy = hoyAhora.toString().slice(0, 3);
     let fullHoraAhora = hoyAhora.toString().slice(16, 21);
@@ -71,7 +72,7 @@ module.exports = (app) => {
    */
 
   // app
-  //   .route("/historicos_satisfaccion")
+  //   .route("/api/historicos_satisfaccion")
   //   .get((req, res) => {
   //     Historicos_satisfaccion.findAll()
   //       .then((result) => res.json(result))
@@ -88,37 +89,51 @@ module.exports = (app) => {
   //   });
 
   // // Historicos por rango de fecha
-  // app.route("/historicosSatisfaccionFecha").post((req, res) => {
-  //   let fechaHoy = new Date().toISOString().slice(0, 10);
-  //   let { fecha_desde, fecha_hasta } = req.body;
+  app.route("/api/historicosSatisfaccionFecha").post((req, res) => {
+    if (!req.headers.apikey) {
+      return res.status(403).send({
+        error: "Forbidden",
+        message: "Tu petición no tiene cabecera de autorización",
+      });
+    }
 
-  //   if (fecha_desde === "" && fecha_hasta === "") {
-  //     fecha_desde = fechaHoy;
-  //     fecha_hasta = fechaHoy;
-  //   }
+    if (req.headers.apikey === apiKey) {
+      let fechaHoy = new Date().toISOString().slice(0, 10);
+      let { fecha_desde, fecha_hasta } = req.body;
 
-  //   if (fecha_hasta == "") {
-  //     fecha_hasta = fecha_desde;
-  //   }
+      if (fecha_desde === "" && fecha_hasta === "") {
+        fecha_desde = fechaHoy;
+        fecha_hasta = fechaHoy;
+      }
 
-  //   if (fecha_desde == "") {
-  //     fecha_desde = fecha_hasta;
-  //   }
+      if (fecha_hasta == "") {
+        fecha_hasta = fecha_desde;
+      }
 
-  //   console.log(req.body);
+      if (fecha_desde == "") {
+        fecha_desde = fecha_hasta;
+      }
 
-  //   Historicos_satisfaccion.findAll({
-  //     where: {
-  //       fecha: {
-  //         [Op.between]: [fecha_desde + " 00:00:00", fecha_hasta + " 23:59:59"],
-  //       },
-  //     },
-  //   })
-  //     .then((result) => res.json(result))
-  //     .catch((error) => {
-  //       res.status(402).json({
-  //         msg: error.menssage,
-  //       });
-  //     });
-  // });
+      console.log(req.body);
+
+      Historicos_satisfaccion.findAll({
+        where: {
+          fecha: {
+            [Op.between]: [fecha_desde + " 00:00:00", fecha_hasta + " 23:59:59"],
+          },
+        },
+      })
+        .then((result) => res.json(result))
+        .catch((error) => {
+          res.status(402).json({
+            msg: error.menssage,
+          });
+        });
+    } else {
+      return res.status(403).send({
+        error: "Forbidden",
+        message: "Cabecera de autorización inválida",
+      });
+    }
+  });
 };
