@@ -21,22 +21,22 @@ let fileBase64Media = "";
 let mensajeBody = "";
 
 // Ruta de la imagen JPEG
-const imagePath = path.join(__dirname, "..", "img", "img.jpeg");
+//const imagePath = path.join(__dirname, "..", "img", "img.jpeg");
 // Leer el contenido de la imagen como un buffer
-const imageBuffer = fs.readFileSync(imagePath);
+//const imageBuffer = fs.readFileSync(imagePath);
 // Convertir el buffer a base64
-const base64String = imageBuffer.toString("base64");
+//const base64String = imageBuffer.toString("base64");
 // Mapear la extensión de archivo a un tipo de archivo
-const fileExtension = path.extname(imagePath);
-const fileType = {
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".png": "image/png",
-}[fileExtension.toLowerCase()];
+//const fileExtension = path.extname(imagePath);
+// const fileType = {
+//   ".jpg": "image/jpeg",
+//   ".jpeg": "image/jpeg",
+//   ".png": "image/png",
+// }[fileExtension.toLowerCase()];
 
-fileMimeTypeMedia = fileType;
+//fileMimeTypeMedia = fileType;
 // El split esta al pedo
-fileBase64Media = base64String.split(",")[0];
+//fileBase64Media = base64String.split(",")[0];
 
 // Tiempo de retraso de consulta al PGSQL para iniciar el envio. 1 minuto
 var tiempoRetrasoPGSQL = 1000 * 60;
@@ -50,7 +50,26 @@ module.exports = (app) => {
   const Turnos_satisfaccion = app.db.models.Turnos_satisfaccion;
   const Users = app.db.models.Users;
 
-  // Ejecutar la funcion de 24hs Ayer de Martes(2) a Sabados (6) a las 09:00am
+  // Ejecutar la funcion de los asistidos ayer solo los Lunes(1) a las 09:00am
+  cron.schedule("00 9 * * 1", () => {
+    let hoyAhora = new Date();
+    let diaHoy = hoyAhora.toString().slice(0, 3);
+    let fullHoraAhora = hoyAhora.toString().slice(16, 21);
+
+    // Checkear la blacklist antes de ejecutar la función
+    const now = new Date();
+    const dateString = now.toISOString().split("T")[0];
+    if (blacklist.includes(dateString)) {
+      console.log(`La fecha ${dateString} está en la blacklist y no se ejecutará la tarea.`);
+      return;
+    }
+
+    console.log("Hoy es:", diaHoy, "la hora es:", fullHoraAhora);
+    console.log("CRON: Se consulta al JKMT 48hs Ayer - Satisfaccion");
+    injeccionFirebird48();
+  });
+
+  // Ejecutar la funcion de los asistidos ayer de Martes(2) a Sabados (6) a las 09:00am
   cron.schedule("00 9 * * 2-6", () => {
     let hoyAhora = new Date();
     let diaHoy = hoyAhora.toString().slice(0, 3);
@@ -77,7 +96,69 @@ module.exports = (app) => {
     }, 1000 * 60);
   }
 
-  // Trae los datos del Firebird
+  // Trae los datos del Firebird solo los Lunes
+  function injeccionFirebird48() {
+    console.log("Obteniendo los datos del Firebird...");
+    Firebird.attach(firebird, function (err, db) {
+      if (err) {
+        console.log(err);
+        return tryAgain();
+      }
+
+      // db = DATABASE
+      db.query(
+        // Trae los registros de los turnos que SI asistieron ayer
+        "SELECT * FROM VW_RESUMEN_TURNOS_AYER_SI_48HS",
+
+        function (err, result) {
+          console.log("Cant de turnos obtenidos del JKMT:", result.length);
+
+          // Recorre el array que contiene los datos e inserta en la base de postgresql
+          result.forEach((e) => {
+            // Si el nro de cert trae NULL cambiar por 000000
+            if (!e.NRO_CERT) {
+              e.NRO_CERT = " ";
+            }
+            // Si no tiene plan
+            if (!e.PLAN_CLIENTE) {
+              e.PLAN_CLIENTE = " ";
+            }
+
+            // Si el nro de tel trae NULL cambiar por 595000 y cambiar el estado a 2
+            // Si no reemplazar el 0 por el 595
+            if (!e.TELEFONO_MOVIL) {
+              e.TELEFONO_MOVIL = "595000";
+              e.estado_envio = 2;
+            } else {
+              e.TELEFONO_MOVIL = e.TELEFONO_MOVIL.replace(0, "595");
+            }
+
+            // Reemplazar por mi nro para probar el envio
+            // if (!e.TELEFONO_MOVIL) {
+            //   e.TELEFONO_MOVIL = "595000";
+            //   e.estado_envio = 2;
+            // } else {
+            //   e.TELEFONO_MOVIL = "595986153301";
+            // }
+
+            // Poblar PGSQL
+            Turnos_satisfaccion.create(e)
+              //.then((result) => res.json(result))
+              .catch((error) => console.log("Error al poblar PGSQL", error.message));
+          });
+
+          // IMPORTANTE: cerrar la conexion
+          db.detach();
+          console.log(
+            "Llama a la funcion iniciar envio que se retrasa 1 min en ejecutarse Satisfaccion"
+          );
+          iniciarEnvio();
+        }
+      );
+    });
+  }
+
+  // Trae los datos del Firebird de Martes a Sabados
   function injeccionFirebird() {
     console.log("Obteniendo los datos del Firebird...");
     Firebird.attach(firebird, function (err, db) {
