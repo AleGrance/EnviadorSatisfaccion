@@ -52,8 +52,8 @@ module.exports = (app) => {
   const Turnos_satisfaccion = app.db.models.Turnos_satisfaccion;
   const Users = app.db.models.Users;
 
-  // Ejecutar la funcion de los asistidos ayer solo los Lunes(1) a las 09:00am
-  cron.schedule("00 9 * * 1", () => {
+  // Ejecutar la funcion de los asistidos ayer solo los Lunes(1) a las 07:00am
+  cron.schedule("00 7 * * 1", () => {
     let hoyAhora = new Date();
     let diaHoy = hoyAhora.toString().slice(0, 3);
     let fullHoraAhora = hoyAhora.toString().slice(16, 21);
@@ -71,8 +71,8 @@ module.exports = (app) => {
     injeccionFirebird48();
   });
 
-  // Ejecutar la funcion de los asistidos ayer de Martes(2) a Sabados (6) a las 09:00am
-  cron.schedule("00 9 * * 2-6", () => {
+  // Ejecutar la funcion de los asistidos ayer de Martes(2) a Sabados (6) a las 07:00am
+  cron.schedule("00 7 * * 2-6", () => {
     let hoyAhora = new Date();
     let diaHoy = hoyAhora.toString().slice(0, 3);
     let fullHoraAhora = hoyAhora.toString().slice(16, 21);
