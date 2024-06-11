@@ -402,7 +402,6 @@ Gracias🦷😁
   let numerosNotificados = [
     { NOMBRE: "Alejandro", NUMERO: "595986153301" },
     { NOMBRE: "Alejandro Corpo", NUMERO: "595974107341" },
-    //{ NOMBRE: "Juan Corpo", NUMERO: "595991711570" },
   ];
 
   async function notificarSesionOff(error) {

@@ -1,5 +1,6 @@
 const cron = require("node-cron");
 const { Op } = require("sequelize");
+const Sequelize = require("sequelize");
 const apiKey = "j8jDDK5I8IvxE4pRheZz0HMDSXW9hkAG";
 
 module.exports = (app) => {
@@ -138,7 +139,10 @@ module.exports = (app) => {
       Encuestas_satisfaccion.findAll({
         where: {
           createdAt: {
-            [Op.between]: [fecha_desde + " 00:00:00", fecha_hasta + " 23:59:59"],
+            [Op.between]: [
+              fecha_desde + " 00:00:00",
+              fecha_hasta + " 23:59:59",
+            ],
           },
         },
         include: [
@@ -179,4 +183,62 @@ module.exports = (app) => {
   //       });
   //     });
   // });
+
+  // PAGINATION
+  app.route("/api/Encuestas_satisfaccionFiltered").post((req, res) => {
+    var search_keyword = req.body.search.value
+      .replace(/[^a-zA-Z 0-9.]+/g, "")
+      .split(" ");
+
+    return Encuestas_satisfaccion.count().then((counts) => {
+      var condition = [];
+
+      for (var searchable of search_keyword) {
+        if (searchable !== "") {
+          condition.push({
+            pregunta1: {
+              [Sequelize.Op.iLike]: `%${searchable}%`,
+            },
+          });
+        }
+      }
+
+      var result = {
+        data: [],
+        recordsTotal: 0,
+        recordsFiltered: 0,
+      };
+
+      if (!counts) {
+        return res.json(result);
+      }
+
+      result.recordsTotal = counts;
+
+      Encuestas_satisfaccion.findAndCountAll({
+        offset: req.body.start,
+        limit: req.body.length,
+        where: {
+          [Sequelize.Op.or]:
+            condition.length > 0
+              ? condition
+              : [{ pregunta1: { [Sequelize.Op.iLike]: "%%" } }],
+        },
+        include: [{
+            model: Turnos_satisfaccion,
+            attributes: ['CLIENTE', 'NRO_CERT', 'SUCURSAL', 'NOMBRE_COMERCIAL', 'FECHA']
+        }],
+        order: [["id_Encuestas_satisfaccion", "DESC"]],
+      })
+        .then((response) => {
+          result.recordsFiltered = response.count;
+          result.data = response.rows;
+          res.json(result);
+        })
+        .catch((err) => {
+          console.error(err);
+          res.status(500).json({ error: "Internal server error" });
+        });
+    });
+  });
 };
