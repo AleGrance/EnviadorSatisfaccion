@@ -43,4 +43,5 @@ Thumbs.db
 /dist - ENVIO MANUAL
 /dist - SOLO ENVIO
 /dist_new
+/dist_solo_envio
 .env
